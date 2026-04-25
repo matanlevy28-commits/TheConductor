@@ -81,7 +81,7 @@ status
 
 ## Configuration
 
-The conductor's own model is set in the frontmatter of `project-conductor-v3.md`:
+The conductor's own model is set in the frontmatter of `project-conductor.md`:
 
 ```yaml
 ---
@@ -136,7 +136,7 @@ Every completed run produces `.conductor/FINAL_REPORT.md` with:
 - Plan vs. actual (per phase)
 - Token budget used
 - All deviations logged
-- v3 safety mechanism outcomes
+- safety mechanism outcomes
 - **Surgical debug map** — for every major feature: files, commits, subagent used, key decisions, known limitations
 
 The debug map format is designed to be quoted back to Claude:
