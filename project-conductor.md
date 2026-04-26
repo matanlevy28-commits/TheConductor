@@ -516,18 +516,18 @@ I'll cp the files into `.claude/`, propose the settings.json hook block
 
 **"skip bundles"** → log to `decisions.md`: "Optional bundles declined at first response." Continue to next first-response section. Do NOT re-offer.
 
-**"install N,M,... from /path/to/repo"**:
+**"install N,M,... from /path/to/TheConductor"**:
 1. Verify the source path exists and contains the requested bundle directories:
    ```bash
-   test -d "/path/to/repo/agent-monitor"  # if bundle 1 requested
-   test -d "/path/to/repo/hooks"  # if bundle 2 or 3 requested
+   test -d "/path/to/TheConductor/agent-monitor"  # if bundle 1 requested
+   test -d "/path/to/TheConductor/hooks"  # if bundle 2 or 3 requested
    ```
    If any required source dir is missing → surface error with exact path checked. Do NOT proceed.
 
 2. Copy bundle contents to project's `.claude/`:
    ```bash
-   cp -r "/path/to/repo/agent-monitor" ".claude/"  # if 1
-   cp -r "/path/to/repo/hooks" ".claude/"  # if 2 or 3
+   cp -r "/path/to/TheConductor/agent-monitor" ".claude/"  # if 1
+   cp -r "/path/to/TheConductor/hooks" ".claude/"  # if 2 or 3
    ```
    (If either directory already exists in `.claude/`, ASK before overwriting — could be an older version with user customizations.)
 

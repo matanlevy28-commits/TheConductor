@@ -77,27 +77,30 @@ Project Conductor v4 is hardened against autonomous-agent failure modes (mechani
 
 ## Installation
 
-### Global install (recommended)
+Clone the repo wherever you like, then run `install.sh`:
 
 ```bash
-git clone https://github.com/mlevyAI/TheConductor ~/.conductor
-mkdir -p ~/.claude/agents/project-conductor
-cp ~/.conductor/project-conductor.md ~/.claude/agents/project-conductor/agent.md
+git clone https://github.com/mlevyAI/TheConductor ~/TheConductor
+~/TheConductor/install.sh
 ```
+
+The installer:
+- Detects the repository's path on this machine (so the agent can find its `hooks/` and `agent-monitor/` bundles when it offers to install them)
+- Patches an in-memory copy of `project-conductor.md`, replacing every `/path/to/TheConductor` placeholder with the real path
+- Copies the patched file to `~/.claude/agents/project-conductor.md`
+- Never modifies the in-repo source
+
+You can clone to any path you like — `~/TheConductor`, `~/Code/TheConductor`, `/opt/TheConductor`, etc. The installer figures it out from where the script lives.
 
 **To update:**
-```bash
-git -C ~/.conductor pull
-cp ~/.conductor/project-conductor.md ~/.claude/agents/project-conductor/agent.md
-```
-
-### Project-level install
 
 ```bash
-git clone https://github.com/mlevyAI/TheConductor ~/.conductor
-mkdir -p .claude/agents/project-conductor
-cp ~/.conductor/project-conductor.md .claude/agents/project-conductor/agent.md
+git -C ~/TheConductor pull && ~/TheConductor/install.sh
 ```
+
+`install.sh` is idempotent: re-running with no changes is a silent no-op. If new commits change `project-conductor.md`, it asks before overwriting (or pass `--force` to skip the prompt in scripted update flows).
+
+> **Migrating from a pre-installer version?** Earlier docs deployed the agent as `~/.claude/agents/project-conductor/agent.md` (subdirectory + `agent.md`). The installer now uses the flat form `~/.claude/agents/project-conductor.md`. After running `install.sh`, remove the old subdirectory: `rm -rf ~/.claude/agents/project-conductor`.
 
 ## Usage
 
@@ -122,7 +125,7 @@ status
 | `proceed` | Continue after a checkpoint |
 | `permissions yes` | Accept permissions offer |
 | `approve enrichments` | Approve spec additions (required before Phase 2) |
-| `install bundles N,M from /path/to/repo` | Install one or more optional bundles (1=monitor, 2=heartbeat, 3=usage-limit) — see Optional bundles offer in first response (NEW in v4.0.2) |
+| `install bundles N,M from /path/to/TheConductor` | Install one or more optional bundles (1=monitor, 2=heartbeat, 3=usage-limit) — see Optional bundles offer in first response. After running `install.sh`, the path is already baked into the agent — the offer prompt shows the real path on this machine, not a placeholder. (NEW in v4.0.2) |
 | `skip bundles` | Decline the optional bundles offer (NEW in v4.0.2) |
 
 ## Configuration
@@ -193,38 +196,21 @@ The debug map format is designed to be quoted back to Claude:
 
 > "Bug in [feature]. Per debug map: phase [P.T], files [list], commit [SHA]. Fix surgically without touching unrelated code."
 
-## Optional monitoring (NEW in v4)
+## Optional bundles (monitoring + hooks)
 
-The `agent-monitor/` directory ships an opt-in monitoring layer. After each session, it generates a markdown report with auto-detected anti-patterns (probe sprawl, busy-wait loops, no-forward-progress clusters, repeat-bash, scope-shrink signals) — pre-filled in the "Issues & Patterns to Improve" table.
+Three opt-in bundles ship with the conductor:
 
-**Install (3 steps):**
-```bash
-cp -r agent-monitor/ /path/to/your/project/.claude/
-# 1. Add the hooks block from agent-monitor/example-settings.json to your settings.json
-# 2. Add the two Bash() permissions from agent-monitor/README.md
-# Done — your next Claude Code session will produce a monitor report at end-of-session.
-```
-
-Privacy: all data stays local. The reports include an opt-in share-footer with a GitHub issue URL template, but you decide what (if anything) to share.
-
-See [agent-monitor/README.md](agent-monitor/README.md) for full install + what gets detected.
-
-## Optional hooks (NEW in v4)
-
-The `hooks/` directory ships two opt-in PostToolUse hooks. Both are PURELY LOCAL — no network calls, no secret reads.
-
-| Hook | Purpose |
+| Bundle | What it does |
 |---|---|
-| `heartbeat.py` | Updates `.conductor/heartbeat.json` after every tool call so parent agents can read background-mode status without spawning a second conductor instance |
-| `usage_limit_wakeup.py` | Detects API rate-limit / usage-limit errors, computes a recommended wakeup time, writes `.conductor/usage-limit-paused.json` so the conductor can `ScheduleWakeup` and resume after the limit resets |
+| `agent-monitor/` | After each session, generates a markdown report with auto-detected anti-patterns (probe sprawl, busy-wait loops, no-forward-progress clusters, repeat-bash, scope-shrink). Pre-fills the "Issues & Patterns to Improve" table. Includes opt-in share-footer with a GitHub issue URL template — you decide what (if anything) to share. |
+| `hooks/heartbeat.py` | Updates `.conductor/heartbeat.json` after every tool call so parent agents can read background-mode status without spawning a second conductor instance. |
+| `hooks/usage_limit_wakeup.py` | Detects API rate-limit / usage-limit errors, computes a recommended wakeup time, writes `.conductor/usage-limit-paused.json` so the conductor can `ScheduleWakeup` and resume after the limit resets. |
 
-**Install:**
-```bash
-cp -r hooks/ /path/to/your/project/.claude/
-# Then add the snippets from hooks/README.md to your settings.json + permissions
-```
+All three are **opt-in, purely local — no network calls, no secret reads.**
 
-See [hooks/README.md](hooks/README.md) for full install, security notes, and uninstall.
+**You don't install them by hand.** When you start a session, the conductor offers to install them for you and walks through the settings.json + permissions wiring with a sanity-test before activating. Just answer the prompt (`install 1,2,3`, `install 2`, `skip bundles`, etc.).
+
+For the implementation details, security notes, and manual install steps (advanced users only), see [agent-monitor/README.md](agent-monitor/README.md) and [hooks/README.md](hooks/README.md).
 
 ## Changelog
 

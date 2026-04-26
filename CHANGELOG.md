@@ -8,6 +8,57 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [4.1.0] — 2026-04-27
+
+Adds an `install.sh` script and consolidates the install path. Previously the README walked users through `git clone` + `mkdir` + `cp`, and the agent's bundle install offer asked users to type the source repo path on every invocation. Both problems were caused by the agent having no anchor to its source repo. v4.1.0 fixes that with an installer that bakes the real path in at install time.
+
+### Added
+
+- **`install.sh`** — single-command installer. Detects the cloned repo's location (works wherever you cloned it: `~/TheConductor`, `~/Code/TheConductor`, `/opt/TheConductor`, etc.), patches `project-conductor.md` so every `/path/to/TheConductor` placeholder is replaced with the real absolute path, and copies the patched file to `~/.claude/agents/project-conductor.md`. Supports macOS / Linux / Windows Git Bash / WSL.
+- **`--force` flag** for `install.sh` — skips the overwrite prompt for scripted update flows (`git -C <path> pull && <path>/install.sh --force`).
+- **Idempotency** — re-running `install.sh` on an unchanged install is a silent no-op (uses `cmp -s` to compare the patched temp file against the deployed file before prompting).
+
+### Changed
+
+- **Install destination changed from `~/.claude/agents/project-conductor/agent.md` (subdirectory + `agent.md`) to `~/.claude/agents/project-conductor.md` (flat file).** Both forms work in Claude Code. The flat form matches community convention (e.g., the `msitarzewski/agency-agents` repo) and removes one layer of nesting. Existing users updating from a previous version should run `rm -rf ~/.claude/agents/project-conductor` after running the new installer (see Migration below).
+- **Standardized the placeholder in `project-conductor.md`** — all 5 occurrences of `/path/to/repo` (lines 519, 522, 523, 529, 530) renamed to `/path/to/TheConductor` to match the 4 existing `/path/to/TheConductor` occurrences in the same file. After `install.sh` runs, all 9 placeholders are substituted with the user's real repo path. The agent's bundle install offer now shows the real path the user can copy-paste, not a placeholder.
+- **README install section simplified** — replaced the manual `git clone` + `mkdir` + `cp` sequence (and a separate "project-level install" section) with a single `git clone` + `./install.sh` flow. Update is now a one-liner: `git -C <path> pull && <path>/install.sh`. The project-level install pattern is no longer documented (was rarely used; manual `cp` still works for advanced users who need it).
+- **README "Optional monitoring" + "Optional hooks" sections collapsed into one "Optional bundles" section** — manual `cp -r` install instructions removed. Users are pointed to the runtime offer (which now knows the source path) and to `agent-monitor/README.md` / `hooks/README.md` for advanced manual install.
+
+### Why
+
+Two problems with the v4.0.2 install flow:
+
+1. **The agent had no anchor to its source repo.** When it offered bundle install (`install bundles N,M from /path/to/repo`), the user had to type the source path manually every time — because the deployed agent file in `~/.claude/agents/` had no way to know where the cloned repo lived. With v4.1.0's `install.sh`, the path is substituted into the deployed file at install time, so the offer shows the real path on the user's machine.
+2. **Multi-step manual install was error-prone.** `git pull` succeeded silently when the follow-up `cp` was forgotten, leaving users on stale agent code while thinking they had updated. `install.sh` is one command for both initial install and updates.
+
+### Migration
+
+If you've installed any version before v4.1.0:
+
+```bash
+# 1. Remove the old subdirectory-form install
+rm -rf ~/.claude/agents/project-conductor
+
+# 2. Pull the new repo state
+git -C <wherever-you-cloned> pull
+
+# 3. Run the new installer
+<wherever-you-cloned>/install.sh
+```
+
+After this, the agent lives at `~/.claude/agents/project-conductor.md` (flat file), and the bundle install offer will show your real repo path instead of a placeholder.
+
+### Not changed
+
+- Agent prompt's behavioral rules (Investigation Budget, Anti-Premature-Failure, Hard Stops, etc., all unchanged from v4.0.2)
+- Bundle code (no changes to `agent-monitor/` or `hooks/` scripts in this release)
+- `bundles_already_handled` opt-out flag (still works the same way)
+- Detector thresholds (unchanged)
+- Privacy posture (still 100% local, opt-in, no telemetry)
+
+---
+
 ## [4.0.2] — 2026-04-26
 
 Surfaces the optional bundles in the conductor's first response so users discover them without reading the README. Without this, new users had no in-flow signal that `agent-monitor/` and `hooks/` exist — they only ride along if explicitly cp'd from the source repo.
