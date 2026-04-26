@@ -81,15 +81,15 @@ Project Conductor v4 is hardened against autonomous-agent failure modes (mechani
 
 First time:
 ```bash
+cd ~
 git clone https://github.com/mlevyAI/TheConductor
-cd TheConductor
 mkdir -p ~/.claude/agents/project-conductor
-cp project-conductor.md ~/.claude/agents/project-conductor/agent.md
+cp ~/TheConductor/project-conductor.md ~/.claude/agents/project-conductor/agent.md
 ```
 
 To update:
 ```bash
-cd TheConductor
+cd ~/TheConductor
 git pull
 cp project-conductor.md ~/.claude/agents/project-conductor/agent.md
 ```
@@ -97,8 +97,7 @@ cp project-conductor.md ~/.claude/agents/project-conductor/agent.md
 ### Project-level install
 
 ```bash
-git clone https://github.com/mlevyAI/TheConductor
-cd TheConductor
+cd ~/TheConductor   # or wherever you cloned it
 mkdir -p .claude/agents/project-conductor
 cp project-conductor.md .claude/agents/project-conductor/agent.md
 ```
