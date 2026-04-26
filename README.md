@@ -100,8 +100,6 @@ git -C ~/TheConductor pull && ~/TheConductor/install.sh
 
 `install.sh` is idempotent: re-running with no changes is a silent no-op. If new commits change `project-conductor.md`, it asks before overwriting (or pass `--force` to skip the prompt in scripted update flows).
 
-> **Migrating from a pre-installer version?** Earlier docs deployed the agent as `~/.claude/agents/project-conductor/agent.md` (subdirectory + `agent.md`). The installer now uses the flat form `~/.claude/agents/project-conductor.md`. After running `install.sh`, remove the old subdirectory: `rm -rf ~/.claude/agents/project-conductor`.
-
 ## Usage
 
 ```
