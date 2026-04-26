@@ -9,8 +9,27 @@ The most valuable contributions are:
 - **Environment compatibility** — gaps where the conductor assumed something about Claude Code that didn't hold in your version/config
 - **Routing improvements** — cases where tasks were routed to the wrong subagent and how you fixed it
 - **New hard stop conditions** — situations that should have been a hard stop but weren't
+- **New anti-pattern detectors** for `agent-monitor/reporter.py` — if you spot a behavior the auto-detection misses (NEW in v4)
 
 Less valuable: cosmetic changes, speculative features, or additions that increase complexity without addressing a real failure mode.
+
+## Sharing your monitor reports (NEW in v4)
+
+If you've installed the optional `agent-monitor/` bundle, every Claude Code session ends with a markdown report at `.claude/agent-monitor/reports/report_<ts>.md`. The bottom of each report includes an opt-in share-footer with a GitHub issue URL template — clicking it pre-fills an issue with your report content.
+
+**Before pasting:**
+- Redact absolute file paths (`/Users/.../`, `/home/.../`, project-identifying directory names)
+- Redact environment-specific URLs (internal hostnames, API endpoints with credentials)
+- Redact any tokens, keys, or passwords accidentally captured in bash output
+- Drop project-identifying names if confidential
+
+**What makes a useful monitor report contribution:**
+
+1. **A pattern the auto-detector caught that wasn't on its list before.** Example: "The repeat-bash detector caught me running `tail -f log` 8 times — turned out I was waiting for a background process to finish; should have used a heartbeat file."
+2. **A pattern the auto-detector MISSED that you noticed manually.** Example: "Agent kept dispatching the same subagent with slightly-different prompts — 5 times in a row before I intervened. Detector didn't catch this. Suggesting a new detector: 'subagent-thrash' = ≥3 Agent dispatches with same `subagent_type` and >70% prompt similarity."
+3. **A regression vs prior conductor version.** Example: "v4 added per-resource discovery, but in my session it triggered on a single-resource task and added overhead. Suggest: skip per-resource discovery rule when only 1 external resource detected."
+
+The share-footer is opt-in. The maintainers don't see your reports unless you choose to share them. **No automatic telemetry exists.**
 
 ## How to contribute
 
