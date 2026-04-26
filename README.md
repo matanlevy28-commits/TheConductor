@@ -80,8 +80,7 @@ Project Conductor v4 is hardened against autonomous-agent failure modes (mechani
 Clone the repo wherever you like, then run `install.sh`:
 
 ```bash
-git clone https://github.com/mlevyAI/TheConductor ~/TheConductor
-~/TheConductor/install.sh
+git clone https://github.com/mlevyAI/TheConductor && cd TheConductor && ./install.sh
 ```
 
 The installer:
@@ -90,12 +89,12 @@ The installer:
 - Copies the patched file to `~/.claude/agents/project-conductor.md`
 - Never modifies the in-repo source
 
-You can clone to any path you like — `~/TheConductor`, `~/Code/TheConductor`, `/opt/TheConductor`, etc. The installer figures it out from where the script lives.
+You can clone to any path you like — the command above clones into the current directory, but `~/TheConductor`, `~/Code/TheConductor`, `/opt/TheConductor` etc. all work. The installer figures it out from where the script lives.
 
 **To update:**
 
 ```bash
-git -C ~/TheConductor pull && ~/TheConductor/install.sh
+git -C <path-to-TheConductor> pull && <path-to-TheConductor>/install.sh
 ```
 
 `install.sh` is idempotent: re-running with no changes is a silent no-op. If new commits change `project-conductor.md`, it asks before overwriting (or pass `--force` to skip the prompt in scripted update flows).
