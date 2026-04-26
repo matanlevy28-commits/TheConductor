@@ -335,6 +335,9 @@ Original backed up to `[path].original.md`.
 ### 🔐 Permissions setup offer
 [See Permissions Offer section below - MANDATORY]
 
+### 📦 Optional bundles offer (NEW in v4.0.2)
+[See Optional Bundles Offer section below — MANDATORY to surface, optional for user to accept]
+
 ### ⚠️ Known interruption points ahead
 [List anticipated stops]
 
@@ -459,6 +462,126 @@ The v2 assumption that `Bash(cmd:*)` syntax is always correct is fragile — Cla
 5. If canary passes → move the file into place: `mv .conductor/settings.proposed.json .claude/settings.json`.
 
 **Why this matters**: a settings.json with broken syntax is actively dangerous because it doesn't error — it just fails silently to apply rules, giving the user (and conductor) the impression that auto-allow is in effect when it isn't.
+
+---
+
+## Optional Bundles Offer (NEW in v4.0.2 — part of first response)
+
+The conductor ships with two opt-in bundles (`agent-monitor/` and `hooks/`) in its source repo. They are NOT auto-installed when the user copies `project-conductor.md` to `~/.claude/agents/...`. Most users don't know they exist unless they read the README. v4.0.2 surfaces them in the first response so users get a chance to opt in.
+
+### Step 1: Surface the offer (in the first response)
+
+Use this exact wording — clear and short, one paragraph per bundle:
+
+```markdown
+### 📦 Optional bundles offer
+
+Three opt-in bundles ship with project-conductor. Install any or all:
+
+**(1) agent-monitor/** — Session reports
+Generates a markdown report at the end of every Claude Code session in this
+project: what the agent did, files touched, and auto-flagged anti-patterns
+(probe loops, busy-waits, no-progress clusters, etc.). You see how the agent
+behaved without reading raw logs, and you catch it getting stuck before it
+burns more budget.
+
+**(2) hooks/heartbeat.py** — Background visibility
+Writes `.conductor/heartbeat.json` after every tool call. When you spawn the
+conductor in background mode, you (or the parent Claude Code session) can
+read this file to see live status — no need to spawn a second conductor
+instance just to ask "what are you doing?"
+
+**(3) hooks/usage_limit_wakeup.py** — Auto-resume after API limits
+Detects when you hit a rate / usage limit, calculates when it resets,
+signals the conductor to ScheduleWakeup at that time. If your session hits
+a limit mid-work, work resumes automatically when the limit clears — no
+manual restart, no lost progress.
+
+**All three are PURELY LOCAL — no network calls, no secret reads.**
+You can read each file in <5 minutes before installing.
+
+### Install
+
+Reply with the numbers + the path to your project-conductor source repo:
+- "install 1,2,3 from /path/to/TheConductor" — install all three
+- "install 1 from /path/to/TheConductor" — just monitor
+- "install 2,3 from /path/to/TheConductor" — just both hooks
+- "skip bundles" — proceed without any
+
+I'll cp the files into `.claude/`, propose the settings.json hook block
++ permission entries for your review, and run a sanity test before activating.
+```
+
+### Step 2: Handle response
+
+**"skip bundles"** → log to `decisions.md`: "Optional bundles declined at first response." Continue to next first-response section. Do NOT re-offer.
+
+**"install N,M,... from /path/to/repo"**:
+1. Verify the source path exists and contains the requested bundle directories:
+   ```bash
+   test -d "/path/to/repo/agent-monitor"  # if bundle 1 requested
+   test -d "/path/to/repo/hooks"  # if bundle 2 or 3 requested
+   ```
+   If any required source dir is missing → surface error with exact path checked. Do NOT proceed.
+
+2. Copy bundle contents to project's `.claude/`:
+   ```bash
+   cp -r "/path/to/repo/agent-monitor" ".claude/"  # if 1
+   cp -r "/path/to/repo/hooks" ".claude/"  # if 2 or 3
+   ```
+   (If either directory already exists in `.claude/`, ASK before overwriting — could be an older version with user customizations.)
+
+3. Build the hook block to add to `settings.json` (or `settings.local.json` per user's permissions-offer choice). Replace the `<absolute-path-to>` placeholders in `agent-monitor/example-settings.json` with the real absolute path.
+
+   For bundle (1) — agent-monitor — you add 4 hooks: SessionStart + PreToolUse + PostToolUse (all → `logger.py`) + Stop (→ `reporter.py`).
+   For bundle (2) — heartbeat — you add 1 PostToolUse hook → `heartbeat.py`.
+   For bundle (3) — usage_limit_wakeup — you add 1 PostToolUse hook → `usage_limit_wakeup.py`.
+
+   If the user installs both (2) and (3), they share the same PostToolUse event — append both commands inside the same hook entry's `hooks` array.
+
+4. Build the permission entries to add (each installed script gets a `Bash(python3 "<absolute-path>")` allow entry):
+   ```json
+   "Bash(python3 \"<absolute-path>/.claude/agent-monitor/logger.py\")",
+   "Bash(python3 \"<absolute-path>/.claude/agent-monitor/reporter.py\")",
+   "Bash(python3 \"<absolute-path>/.claude/hooks/heartbeat.py\")",
+   "Bash(python3 \"<absolute-path>/.claude/hooks/usage_limit_wakeup.py\")"
+   ```
+   Only include entries for the bundles being installed.
+
+5. Surface the proposed settings.json delta to the user for review (same posture as the existing Permissions Offer):
+   ```
+   I've drafted these additions to .claude/settings.json:
+   [show JSON delta — both hooks and permissions]
+   
+   I'll write to .conductor/bundles-settings.proposed.json first and run
+   a sanity test (a benign tool call) to confirm Claude Code picks up
+   the new permissions correctly. Only if the canary passes do I move
+   the merged settings to .claude/settings.json.
+   
+   Reply "approve" / "edit" / "abort".
+   ```
+
+6. On approve → merge + sanity-test (same procedure as Permissions Offer Step 6) → on pass, activate → log to `decisions.md`: "Bundles N,M installed at [time], settings sanity-tested."
+
+   On edit → iterate JSON until approved.
+   On abort → revert (delete copied bundle dirs from `.claude/`), log decision.
+
+### Step 3: Mid-run install
+
+Users can also install bundles mid-session by saying:
+```
+install bundles 1,2,3 from /path/to/TheConductor
+```
+This triggers the same Step 2 procedure outside the first-response flow. Useful when a user reads the README mid-build and decides they want monitoring.
+
+### Step 4: When to skip the offer
+
+Skip surfacing the offer if:
+- All three bundles are already installed (`.claude/agent-monitor/` and `.claude/hooks/heartbeat.py` and `.claude/hooks/usage_limit_wakeup.py` all exist) AND wired into settings.json
+- User has set `bundles_already_handled: true` in `.conductor/config.json` (project-level opt-out)
+- This is a session resumption (state files exist in `.conductor/`) and the bundles offer was answered in the original session
+
+In all skip cases, log to `decisions.md`: "Bundles offer skipped because [reason]."
 
 ---
 

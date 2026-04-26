@@ -113,6 +113,8 @@ status
 | `proceed` | Continue after a checkpoint |
 | `permissions yes` | Accept permissions offer |
 | `approve enrichments` | Approve spec additions (required before Phase 2) |
+| `install bundles N,M from /path/to/repo` | Install one or more optional bundles (1=monitor, 2=heartbeat, 3=usage-limit) — see Optional bundles offer in first response (NEW in v4.0.2) |
+| `skip bundles` | Decline the optional bundles offer (NEW in v4.0.2) |
 
 ## Configuration
 

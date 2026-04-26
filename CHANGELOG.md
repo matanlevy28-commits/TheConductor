@@ -8,6 +8,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [4.0.2] — 2026-04-26
+
+Surfaces the optional bundles in the conductor's first response so users discover them without reading the README. Without this, new users had no in-flow signal that `agent-monitor/` and `hooks/` exist — they only ride along if explicitly cp'd from the source repo.
+
+### Added
+
+- **First-response "Optional bundles offer" section** — appears after the existing Permissions setup offer. Surfaces the three bundles with one short paragraph each:
+  1. `agent-monitor/` — session reports with auto-detected anti-patterns
+  2. `hooks/heartbeat.py` — background-mode status visibility
+  3. `hooks/usage_limit_wakeup.py` — auto-resume after API rate/usage limits
+- **"Optional Bundles Offer" procedure section** in `project-conductor.md` — full install handling: source-path verification, file copy, settings.json hook block + permission entries draft, sanity-test before activation (mirrors the v3 Permissions Offer posture).
+- **Mid-run install controls** — users can install bundles mid-session with `install bundles 1,2,3 from /path/to/TheConductor` or decline with `skip bundles`.
+- **`bundles_already_handled: true`** opt-out flag in `.conductor/config.json` for users who don't want the offer to appear (e.g., project-level pre-decision).
+
+### Why
+
+v4.0.0 introduced the bundles but they require manual `cp -r` + manual `settings.json` editing. Most new users don't read the README first, so most users never discovered the bundles existed. v4.0.2 makes discovery part of the standard Phase 0 flow — same posture as the permissions offer (surface, ask, respect the answer, don't re-ask).
+
+### Not changed
+
+- Bundle code (no changes to `agent-monitor/` or `hooks/` scripts in this release)
+- Bundle install posture (still opt-in, still local-only, no telemetry)
+- Agent prompt's behavioral rules (Investigation Budget, Anti-Premature-Failure, etc., all unchanged from v4.0.0)
+- Detector thresholds (unchanged from v4.0.1)
+
+---
+
 ## [4.0.1] — 2026-04-26
 
 Improves the monitor-report → maintainer feedback loop. v4.0.0's share-footer just said "paste this report" — maintainers received tool-call dumps without context on what the user wanted or whether the patterns were bad-in-context. v4.0.1 adds a structured contribution template.
