@@ -13,21 +13,37 @@ The most valuable contributions are:
 
 Less valuable: cosmetic changes, speculative features, or additions that increase complexity without addressing a real failure mode.
 
-## Sharing your monitor reports (NEW in v4)
+## Sharing your monitor reports (UPDATED in v4.0.1)
 
-If you've installed the optional `agent-monitor/` bundle, every Claude Code session ends with a markdown report at `.claude/agent-monitor/reports/report_<ts>.md`. The bottom of each report includes an opt-in share-footer with a GitHub issue URL template — clicking it pre-fills an issue with your report content.
+If you've installed the optional `agent-monitor/` bundle, every Claude Code session ends with a markdown report at `.claude/agent-monitor/reports/report_<ts>.md`. The bottom of each report includes an opt-in share-footer with:
 
-**Before pasting:**
-- Redact absolute file paths (`/Users/.../`, `/home/.../`, project-identifying directory names)
-- Redact environment-specific URLs (internal hostnames, API endpoints with credentials)
-- Redact any tokens, keys, or passwords accidentally captured in bash output
-- Drop project-identifying names if confidential
+- A GitHub issue URL template
+- **A 5-field contribution template** that takes ~2 minutes to fill in
+
+**Why the template matters:** the auto-detector flags patterns based on hardcoded heuristics (probe sprawl ≥3 files, busy-wait ≥2 occurrences, etc.). It cannot judge whether a flagged pattern was bad-in-context — that requires knowing what the user was trying to do and whether the agent succeeded. The template captures that context so maintainers can act on the report.
+
+**The 5 fields the template asks for:**
+
+1. **What you were trying to do** (1-2 sentences)
+2. **Did the agent succeed?** (yes / partially / no, with brief explanation)
+3. **Which flagged patterns were bad-in-context vs neutral vs false-positive** (one line each)
+4. **What should the agent have done instead?** (optional but high-value)
+5. **Anything the auto-detector missed** (optional)
+
+Then paste the raw report below the template (after redacting paths/secrets).
 
 **What makes a useful monitor report contribution:**
 
-1. **A pattern the auto-detector caught that wasn't on its list before.** Example: "The repeat-bash detector caught me running `tail -f log` 8 times — turned out I was waiting for a background process to finish; should have used a heartbeat file."
+1. **A pattern the auto-detector caught and you confirm was bad** (with goal context — "I was trying to X, the agent did Y instead, the detector caught it"). This validates existing detector thresholds.
 2. **A pattern the auto-detector MISSED that you noticed manually.** Example: "Agent kept dispatching the same subagent with slightly-different prompts — 5 times in a row before I intervened. Detector didn't catch this. Suggesting a new detector: 'subagent-thrash' = ≥3 Agent dispatches with same `subagent_type` and >70% prompt similarity."
-3. **A regression vs prior conductor version.** Example: "v4 added per-resource discovery, but in my session it triggered on a single-resource task and added overhead. Suggest: skip per-resource discovery rule when only 1 external resource detected."
+3. **A false-positive** — the detector flagged something that wasn't actually a problem in your context. Helps tune thresholds.
+4. **A regression vs prior conductor version.** Example: "v4 added per-resource discovery, but in my session it triggered on a single-resource task and added overhead. Suggest: skip per-resource discovery rule when only 1 external resource detected."
+
+**Before pasting, redact:**
+- Absolute file paths (`/Users/.../`, `/home/.../`, project-identifying directory names)
+- Environment-specific URLs (internal hostnames, API endpoints with credentials)
+- Any tokens, keys, or passwords accidentally captured in bash output
+- Drop project-identifying names if confidential
 
 The share-footer is opt-in. The maintainers don't see your reports unless you choose to share them. **No automatic telemetry exists.**
 

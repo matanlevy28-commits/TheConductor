@@ -8,6 +8,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [4.0.1] — 2026-04-26
+
+Improves the monitor-report → maintainer feedback loop. v4.0.0's share-footer just said "paste this report" — maintainers received tool-call dumps without context on what the user wanted or whether the patterns were bad-in-context. v4.0.1 adds a structured contribution template.
+
+### Changed
+
+- **`agent-monitor/reporter.py` — `share_footer()` now emits a 5-field contribution template** (What I was trying to do / Did the agent succeed / Which patterns were BAD vs NEUTRAL vs FALSE-POSITIVE / What should it have done / Anything else). Users fill the template before pasting the raw report. Takes ~2 minutes; makes the difference between an actionable report and a tool-call dump.
+- **`CONTRIBUTING.md` — "Sharing your monitor reports" section updated** to explain the template, why each field matters, and what makes a useful report.
+
+### Why
+
+The auto-detector is static (regex + thresholds). It cannot judge whether a flagged pattern was bad-in-context — that requires knowing the user's goal. Without that context, contributed reports are observations, not actionables. The structured template captures the missing context cheaply.
+
+### Not changed
+
+- Detector thresholds and patterns (no detector logic changes in this release)
+- Privacy posture (still 100% local, opt-in, no telemetry)
+- Agent prompt (`project-conductor.md` unchanged in this release)
+
+---
+
 ## [4.0.0] — 2026-04-26
 
 Behavior-shift release derived from real-world test sessions. v3 was over-cautious; v4 is biased toward iterating before asking, discovering before declaring impossible, and notifying without blocking. Twelve discrete process failures observed in v3 → addressed in v4.

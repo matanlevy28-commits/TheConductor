@@ -277,26 +277,61 @@ def format_session(session: list, idx: int) -> str:
 
 
 def share_footer():
-    """Opt-in share footer. Users who want to contribute report patterns
-    can click the URL template and paste (after redacting paths/secrets)."""
+    """Opt-in share footer (v4.0.1: structured contribution template).
+
+    Maintainers cannot judge whether an auto-detected pattern was bad-in-context
+    without knowing what the user was trying to do. So the footer prompts the
+    user to fill 5 short fields BEFORE pasting the raw report — shifting
+    contributions from 'tool-call dumps' to 'structured incident reports'
+    that are actually actionable.
+    """
     return [
         "---",
         "## 📤 Share this report with project-conductor maintainers",
         "",
         "Found a useful pattern, a regression, or a new failure mode worth documenting?",
-        "Open an issue at the project-conductor repo:",
+        "**Copy the template below, fill the 5 fields, then open an issue:**",
         "",
         "```",
-        "https://github.com/<your-fork>/project-conductor/issues/new?title=Agent+pattern&body=<paste this section>",
+        "https://github.com/<your-fork>/project-conductor/issues/new?title=Agent+session+report",
         "```",
         "",
-        "**Before pasting, redact:**",
+        "### Contribution template (paste into the issue body, fill the brackets)",
+        "",
+        "````markdown",
+        "## What I was trying to do",
+        "[1-2 sentences. The agent's task / the spec / what success would look like.]",
+        "",
+        "## Did the agent succeed?",
+        "- [ ] Yes, fully",
+        "- [ ] Partially (explain: ...)",
+        "- [ ] No (explain: ...)",
+        "",
+        "## Which auto-detected patterns were bad-in-context vs neutral?",
+        "For each row in the report's 'Issues & Patterns to Improve' table, mark BAD / NEUTRAL / FALSE-POSITIVE and add 1 line of why.",
+        "",
+        "Example:",
+        "- Probe sprawl (3 files): BAD — agent never committed to a draft, kept researching.",
+        "- Repeat-bash (`tail -f log` × 8): NEUTRAL — I was waiting on a long scrape, no clean alternative.",
+        "- No-progress cluster (12 reads): FALSE-POSITIVE — I was reviewing code, not stuck.",
+        "",
+        "## What should the agent have done instead?",
+        "[Optional but high value. If you know, write it. If you don't, leave blank — the maintainers will analyze.]",
+        "",
+        "## Anything else (new pattern the auto-detector missed, environment quirks, etc.)",
+        "[Optional.]",
+        "",
+        "## Raw session report (redact before pasting!)",
+        "[Paste the rest of this report below.]",
+        "````",
+        "",
+        "### Before pasting, redact:",
         "- Absolute file paths (`/Users/.../`, `/home/.../`)",
-        "- Environment-specific URLs (internal hostnames, API endpoints with secrets)",
-        "- Any tokens, keys, passwords accidentally captured in bash command output",
+        "- Environment-specific URLs, internal hostnames, API endpoints with credentials",
+        "- Any tokens, keys, passwords accidentally captured in bash output",
         "- Project-identifying names if confidential",
         "",
-        "The maintainers care most about: **what pattern triggered, what impact it had, what fix you applied.**",
+        "**Why this template:** without 'what you were trying to do' and 'was this bad-in-context', maintainers can't judge whether a flagged pattern is actually a problem or just an observation. Filling the 5 fields takes ~2 minutes and makes the difference between an actionable report and a tool-call dump.",
         "",
     ]
 
