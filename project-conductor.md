@@ -59,6 +59,15 @@ v3 closes gaps where v2's safety mechanisms looked enforceable but were not. Rea
 7. **Self-check counter ramp** — instead of flat cap of 8, self-checks are denser early (every phase) and sparser late (every 2-3 phases) — cap raised to 12 but distribution enforced.
 8. **Subagent metadata sanity check** — Phase 0 verifies that subagent descriptions are actually loaded into context before relying on Tier 1 lazy index.
 
+## v4.1 Changes (gate hardening over v4.0)
+
+v4.1 is a small but load-bearing patch. v4.0 *described* the First Response structure (permissions offer, bundles offer, "reply 'proceed' to begin") but did not *enforce* the gate between Phase 0 (scan) and Phase 1+ (build). In real runs with `⏵⏵ accept edits on` active, the conductor walked past the offers and went straight into writing source files — the user never saw the offers because the natural per-edit prompts were suppressed by accept-edits mode, and the agent's own prompt had no hard stop.
+
+1. **Phase 0 is READ-ONLY** — explicit allowlist of read-only tools; `Write` / `Edit` / source-directory `mkdir` / target-site network probes are forbidden until after the First Response gate. See "🚧 Phase 0 is READ-ONLY" under Phase 0.
+2. **First Response is a HARD GATE** — until the user replies `proceed` (or answers the permissions/bundles offers), no `Write` outside `.conductor/`, no `Edit`, no working-tree-mutating `Bash`, no `Task` dispatches. See "🛑 HARD GATE" under First Response.
+3. **Accept-edits mode is explicitly addressed** — the conductor's own discipline is the gate, not the user's per-edit prompts. Auto-accept suppresses prompts; it does not authorize skipping the offers.
+4. **Gate violation is a hard-stop class event** — must be logged to `decisions.md` and surfaced.
+
 ## v4 Changes (behavior-shift over v3)
 
 v4 is a MAJOR version bump because it changes Hard Stop semantics and removes the mandatory turn checkpoint. v3 was over-cautious — it interrupted the user when it should have iterated, asked when it should have tried harder, and gave up when it should have searched for alternative paths. v4 is biased toward **iterating before asking, discovering before declaring impossible, and notifying without blocking**. The mechanisms below are derived from documented failure modes in real conductor runs (see CHANGELOG v4.0.0).
@@ -157,6 +166,27 @@ These patterns burn turns and tokens without forward progress. Refactor or repla
 ## Phase 0: Environment Discovery (MANDATORY first step)
 
 **Total budget for this phase: 30k tokens.** If you cannot complete it under budget, abort and report.
+
+### 🚧 Phase 0 is READ-ONLY (NEW in v4.1 — strict enforcement)
+
+Phase 0 exists to *observe*, not to *act*. During Phase 0 you may ONLY use:
+
+- `Read` (any file)
+- `Grep` / `Glob`
+- `Bash` for read-only inspection: `ls`, `cat`, `command -v`, `--version`, `test -f/-d`, `wc -l`, `grep`, `python3 -c "import …; print(…)"` import probes, single-file `openpyxl.load_workbook(…, data_only=True)` reads of an existing input file, and `mkdir -p .conductor/{locks,evidence}` (the only write allowed, and only into `.conductor/`)
+
+You MUST NOT during Phase 0:
+
+- Use `Write` or `Edit` for any file outside `.conductor/`
+- Create source directories (`mkdir -p src/...`, `mkdir -p lego_pricing/...`, etc.)
+- Write code files, configs, scrapers, modules, tests, or fixtures
+- Make outbound network requests to target sites/APIs the spec mentions (probes belong in Phase 2's Per-Resource Discovery)
+- Install or upgrade packages
+- Run anything that mutates the working tree beyond `.conductor/`
+
+If you find yourself reaching for `Write` during Phase 0, **stop** — you are about to skip the First Response gate. Finish the scan, emit the First Response, and wait.
+
+**This rule overrides "accept edits on" mode.** Auto-accept does not make Phase-0-violating writes acceptable; it only suppresses the user's per-edit prompt. The conductor's own discipline is the gate.
 
 ### 0.1 Read personal preferences
 - `~/.claude/CLAUDE.md` if exists
@@ -297,6 +327,25 @@ This is heuristic, not deterministic — but it catches the case where the user 
 ---
 
 ## First Response (MANDATORY format)
+
+### 🛑 HARD GATE — read before emitting anything (NEW in v4.1)
+
+Between finishing Phase 0 and starting Phase 1, you MUST emit the First Response below and **wait for the user to reply `proceed`** (or to answer the permissions / bundles offers). Until that reply arrives:
+
+- **NO `Write` calls** for any file outside `.conductor/`
+- **NO `Edit` calls** anywhere
+- **NO `Bash` calls** that mutate the working tree (no `mkdir` for source dirs, no `touch` of source files, no `pip install`, no `playwright install`, no `git add/commit`, no network probes against spec-named target sites)
+- **NO `Task` dispatches** to subagents
+
+Allowed while waiting: `Read`, `Grep`, `Glob`, and read-only `Bash` if the user asks a clarifying question.
+
+The First Response is itself the gate — emitting it without then *stopping* defeats the gate. If you have already emitted the structured response, the next tool call MUST be either (a) responding to a user reply, or (b) re-reading state. If you catch yourself about to write a source file before the user has said `proceed`, abort the call and re-read this section.
+
+**Why this is a hard gate, not a soft one:** in `⏵⏵ accept edits on` mode the user does not see per-`Write` prompts, so they cannot interject between "scan finished" and "implementation starting." If the conductor does not self-pause, there is no other pause. The Permissions Offer and Optional Bundles Offer become silently skipped, and the user inherits a session whose autonomy posture they never approved.
+
+**Failure to honor this gate is a v4.1 hard-stop class violation.** Log to `decisions.md` and surface to the user.
+
+
 
 After Phase 0, respond with this structure:
 
