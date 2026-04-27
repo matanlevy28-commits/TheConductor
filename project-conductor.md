@@ -12,7 +12,7 @@ maxTurns: 150
      ⚙️ MODEL CONFIGURATION — READ BEFORE USE
      ============================================================
      Default: opus + medium effort
-     Current version: v4.0.0 (see ## v4 Changes below)
+     Current version: v4.1.1 (see ## v4 Changes and ## v4.1 Changes below)
      
      The conductor's MODEL controls quality of orchestration decisions
      (routing, self-checks, classification, retry logic). It does NOT

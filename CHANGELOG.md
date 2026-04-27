@@ -8,6 +8,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [4.1.1] — 2026-04-27
+
+Hardens the gate between Phase 0 (environment scan) and Phase 1+ (build). Closes a real-world failure mode in which the conductor — running with `⏵⏵ accept edits on` — walked past the Permissions Offer and Optional Bundles Offer and went straight into writing source files. The user never saw the offers because per-edit prompts were suppressed by accept-edits mode, and the agent's own prompt had no enforced stop.
+
+### Changed
+
+- **Phase 0 is now strictly READ-ONLY.** Explicit allowlist of inspection-only Bash (`ls`, `cat`, `command -v`, `--version`, `test -f/-d`, `wc -l`, `grep`, import probes, `openpyxl.load_workbook(..., data_only=True)` reads of an existing input file, and `mkdir -p .conductor/{locks,evidence}`). No `Write` / `Edit` outside `.conductor/`, no source-dir `mkdir`, no target-site network probes.
+- **First Response is a HARD GATE.** No `Write` / `Edit` / tree-mutating Bash and no `Task` dispatches until the user replies `proceed`. `accept-edits` mode explicitly does NOT authorize skipping the gate.
+- **Gate violations are classified as hard-stop class events.** Logged to `.conductor/decisions.md` and surfaced to the user.
+
+### Why
+
+v4.0 *described* the First Response structure (permissions offer, bundles offer, "reply 'proceed' to begin") but did not *enforce* the gate between Phase 0 (scan) and Phase 1+ (build). In real runs with `⏵⏵ accept edits on` active, the conductor walked past the offers and went straight into writing source files — the user never saw the offers because the natural per-edit prompts were suppressed by accept-edits mode, and the agent's own prompt had no hard stop.
+
+### Not changed
+
+- v4.0 behavioral rules (Investigation Budget, Anti-Premature-Failure, Hard Stops, etc.) all unchanged
+- v4.1.0 install flow (`install.sh`, flat-file destination, path substitution) unchanged
+- Bundle code (no changes to `agent-monitor/` or `hooks/`)
+
+---
+
 ## [4.1.0] — 2026-04-27
 
 Adds an `install.sh` script and consolidates the install path. Previously the README walked users through `git clone` + `mkdir` + `cp`, and the agent's bundle install offer asked users to type the source repo path on every invocation. Both problems were caused by the agent having no anchor to its source repo. v4.1.0 fixes that with an installer that bakes the real path in at install time.

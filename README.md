@@ -4,6 +4,14 @@
 
 Project Conductor takes a spec file and runs your entire build — from environment discovery through final delivery — with minimal interruptions. It discovers what tools are actually available in your environment, routes tasks to the right subagents, enforces budgets, and produces a final report with a surgical debug map.
 
+## What's new in v4.1
+
+v4.1 hardens the gate between Phase 0 (environment scan) and Phase 1+ (build) and ships a one-command installer:
+
+- **Phase 0 is now strictly READ-ONLY.** Explicit allowlist of inspection-only Bash; no `Write`/`Edit` outside `.conductor/`, no source-dir `mkdir`, no target-site network probes (v4.1.1).
+- **First Response is a HARD GATE.** No `Write`/`Edit`/tree-mutating Bash and no `Task` dispatches until the user replies `proceed`. Closes a real failure mode where `accept-edits` mode let the conductor walk past the Permissions / Bundles offers straight into source writes (v4.1.1).
+- **`install.sh` for one-command deploy.** Single command bakes the real source-repo path into the deployed agent, so the bundle install offer shows the user's actual path instead of a placeholder. Update is now `git pull && ./install.sh` (v4.1.0).
+
 ## What's new in v4
 
 v4.0.0 is a behavior-shift release derived from real-world test sessions. v3 was over-cautious — it interrupted users when it should have iterated, asked when it should have tried harder, and gave up when alternative paths existed. v4 is biased toward **iterating before asking, discovering before declaring impossible, and notifying without blocking**.
@@ -74,6 +82,13 @@ Project Conductor v4 is hardened against autonomous-agent failure modes (mechani
 | **Output-Quality Completeness Check** | Declaring success when one entire output column is 100% empty |
 | **Turn checkpoint** (informational, non-blocking) | Was mandatory pause in v3; demoted to notification in v4 — opt into `--strict-mode` for v3 behavior |
 | **Heartbeat for Background Mode** | Parent agents losing visibility into backgrounded conductor instances |
+
+**v4.1 mechanisms (NEW):**
+
+| Mechanism | What it prevents |
+|-----------|-----------------|
+| **Phase 0 read-only enforcement** | Conductor writing source files during the discovery scan — only `.conductor/` is writable, only inspection-only Bash is allowed |
+| **First Response hard gate** | Conductor walking past the Permissions / Bundles offers and starting to build before the user replies `proceed` (the `accept-edits`-mode failure mode) |
 
 ## Installation
 
